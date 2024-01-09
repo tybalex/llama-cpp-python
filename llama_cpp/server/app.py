@@ -49,6 +49,9 @@ router = APIRouter(route_class=RouteErrorHandler)
 
 _server_settings: Optional[ServerSettings] = None
 
+DEFAULT_GRAMMAR_FILE = os.getenv("DEFAULT_GRAMMAR_FILE", "./json_grammar.gbnf")
+with open(DEFAULT_GRAMMAR_FILE) as f:
+    default_grammar_text = f.read()
 
 def set_server_settings(server_settings: ServerSettings):
     global _server_settings
@@ -237,6 +240,7 @@ async def create_completion(
     if body.grammar is not None:
         kwargs["grammar"] = llama_cpp.LlamaGrammar.from_string(body.grammar)
 
+
     iterator_or_completion: Union[
         llama_cpp.CreateCompletionResponse,
         Iterator[llama_cpp.CreateCompletionStreamResponse],
@@ -303,7 +307,8 @@ async def create_chat_completion(
 
     if body.grammar is not None:
         kwargs["grammar"] = llama_cpp.LlamaGrammar.from_string(body.grammar)
-
+    else:
+        kwargs["grammar"] = llama_cpp.LlamaGrammar.from_string(default_grammar_text)
     iterator_or_completion: Union[
         llama_cpp.ChatCompletion, Iterator[llama_cpp.ChatCompletionChunk]
     ] = await run_in_threadpool(llama.create_chat_completion, **kwargs)
