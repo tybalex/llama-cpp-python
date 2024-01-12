@@ -298,6 +298,11 @@ async def create_chat_completion(
         "user",
     }
     kwargs = body.model_dump(exclude=exclude)
+    if kwargs["response_format"] and kwargs["response_format"]["type"] == "json_object":
+        kwargs["response_format"] = None # set to None to ignore llama_cpp_python default json_object grammar
+        # print("empty response format")
+        if DEFAULT_GRAMMAR_FILE:
+            kwargs["grammar"] = llama_cpp.LlamaGrammar.from_string(default_grammar_text)
     llama = llama_proxy(body.model)
     if body.logit_bias is not None:
         kwargs["logit_bias"] = (
@@ -308,9 +313,6 @@ async def create_chat_completion(
 
     if body.grammar is not None:
         kwargs["grammar"] = llama_cpp.LlamaGrammar.from_string(body.grammar)
-    else:
-        if DEFAULT_GRAMMAR_FILE:
-            kwargs["grammar"] = llama_cpp.LlamaGrammar.from_string(default_grammar_text)
     iterator_or_completion: Union[
         llama_cpp.ChatCompletion, Iterator[llama_cpp.ChatCompletionChunk]
     ] = await run_in_threadpool(llama.create_chat_completion, **kwargs)
